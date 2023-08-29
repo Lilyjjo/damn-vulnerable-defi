@@ -1,7 +1,7 @@
 const { ethers } = require('hardhat');
 const { expect } = require('chai');
 
-describe('[Challenge] Backdoor', function () {
+describe.only('[Challenge] Backdoor', function () {
     let deployer, users, player;
     let masterCopy, walletFactory, token, walletRegistry;
 
@@ -46,6 +46,14 @@ describe('[Challenge] Backdoor', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        // Attack:
+        // (1) WalletRegistry.sol's proxyCreated() callback doesn't verify that the 'owner'
+        // was the one who setup the wallet instance. 
+        // (2) Can use GnosisSafe's use of delegate call in the wallet setup process to approve
+        // ERC20 transfers of the DamnValuableToken from a malicious source. 
+        // (3) Have attacker launch contract to do this work to meet the 
+        // 'only one transaction' restriction.
+        let attackingContract = await (await ethers.getContractFactory('MaliciousContract', player)).deploy(walletRegistry.address, users);
     });
 
     after(async function () {

