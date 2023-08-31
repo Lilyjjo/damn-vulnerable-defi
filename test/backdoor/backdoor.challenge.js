@@ -1,7 +1,7 @@
 const { ethers } = require('hardhat');
 const { expect } = require('chai');
 
-describe.only('[Challenge] Backdoor', function () {
+describe('[Challenge] Backdoor', function () {
     let deployer, users, player;
     let masterCopy, walletFactory, token, walletRegistry;
 

