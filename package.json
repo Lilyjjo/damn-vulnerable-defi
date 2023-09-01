@@ -42,5 +42,9 @@
     "hardhat-dependency-compiler": "1.1.3",
     "solady": "0.0.67",
     "solmate": "6.6.1"
+  },
+  "dependencies": {
+    "ethereumjs-util": "^7.1.5",
+    "ethereumjs-wallet": "^1.0.2"
   }
 }

