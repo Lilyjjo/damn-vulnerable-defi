@@ -106,6 +106,9 @@ describe('[Challenge] Free Rider', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        let whiteHatSavior = await (await ethers.getContractFactory('WhiteHatSavior', player)).deploy(uniswapPair.address, weth.address, marketplace.address, nft.address, devsContract.address);
+        whiteHatSavior.connect(player).becomeTheRichWhiteKnight();
+
     });
 
     after(async function () {
