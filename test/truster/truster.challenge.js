@@ -23,6 +23,7 @@ describe('[Challenge] Truster', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        token = await (await ethers.getContractFactory('StealMoniesIII', player)).deploy(pool.address, token.address);
     });
 
     after(async function () {
